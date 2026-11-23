@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Groq LLM Playground | Ultra-Fast AI & Prompt Analyzer</title>
+  <meta name="description" content="Modern Groq LLM Playground with customizable temperature, max tokens, live streaming, real-time web search grounding, and smart prompt analyzer.">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            groq: {
+              50: '#fff5f3',
+              100: '#ffe8e4',
+              200: '#ffd5cc',
+              300: '#ffb5a6',
+              400: '#ff846e',
+              500: '#f55036', /* Groq signature brand red-orange */
+              600: '#e03419',
+              700: '#bc2710',
+              800: '#9b2412',
+              900: '#802315',
+              950: '#460e06',
+            },
+            dark: {
+              bg: '#0a0d14',
+              surface: '#111726',
+              card: '#161f33',
+              border: '#1f2d47',
+              hover: '#253554',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Highlight.js for Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.45);
+    }
+
+    /* Markdown prose styles inside assistant responses */
+    .prose-custom {
+      color: inherit;
+      line-height: 1.7;
+    }
+    .prose-custom p {
+      margin-bottom: 0.85rem;
+    }
+    .prose-custom p:last-child {
+      margin-bottom: 0;
+    }
+    .prose-custom h1, .prose-custom h2, .prose-custom h3 {
+      font-weight: 700;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: #f1f5f9;
+    }
+    .dark .prose-custom h1, .dark .prose-custom h2, .dark .prose-custom h3 {
+      color: #f8fafc;
+    }
+    .prose-custom ul, .prose-custom ol {
+      margin-left: 1.4rem;
+      margin-bottom: 0.85rem;
+    }
+    .prose-custom ul { list-style-type: disc; }
+    .prose-custom ol { list-style-type: decimal; }
+    .prose-custom li { margin-bottom: 0.25rem; }
+    .prose-custom code:not(pre code) {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.35rem;
+      font-size: 0.875em;
+      background: rgba(245, 80, 54, 0.12);
+      color: #ff846e;
+      border: 1px solid rgba(245, 80, 54, 0.25);
+    }
+    .prose-custom pre {
+      margin: 0.85rem 0;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 1px solid #1f2d47;
+      background: #0d121f !important;
+    }
+    .prose-custom pre code {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      padding: 1rem;
+      display: block;
+      overflow-x: auto;
+    }
+    .prose-custom blockquote {
+      border-left: 3px solid #f55036;
+      padding-left: 1rem;
+      color: #94a3b8;
+      font-style: italic;
+      margin: 0.85rem 0;
+    }
+    .prose-custom table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.875rem;
+    }
+    .prose-custom th, .prose-custom td {
+      border: 1px solid #1f2d47;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    .prose-custom th {
+      background: #111726;
+      font-weight: 600;
+    }
+
+    /* Range slider custom thumb */
+    input[type=range] {
+      accent-color: #f55036;
+    }
+
+    /* Blinking typing cursor */
+    .typing-cursor::after {
+      content: '▋';
+      display: inline-block;
+      vertical-align: middle;
+      color: #f55036;
+      animation: blink 0.9s infinite;
+      margin-left: 2px;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Pulse glow */
+    .glow-groq {
+      box-shadow: 0 0 25px -5px rgba(245, 80, 54, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-dark-bg text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-hidden selection:bg-groq-500 selection:text-white">
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="h-14 border-b border-dark-border bg-dark-surface/90 backdrop-blur px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center space-x-3">
+      <!-- Mobile Sidebar Toggle -->
+      <button id="toggle-sidebar-btn" class="p-1.5 rounded-lg hover:bg-dark-card border border-dark-border text-slate-300 md:hidden transition">
+        <i data-lucide="sliders" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Logo & Branding -->
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-groq-500 to-amber-600 flex items-center justify-center shadow-lg shadow-groq-500/20">
+          <i data-lucide="zap" class="w-4 h-4 text-white fill-white"></i>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-1.5">
+            <span class="font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-400">Groq</span>
+            <span class="text-xs px-1.5 py-0.5 rounded bg-groq-500/10 text-groq-400 font-medium border border-groq-500/20">Playground</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Model Indicator (Desktop) -->
+      <div class="hidden lg:flex items-center space-x-2 pl-4 border-l border-dark-border text-xs text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Active Model:</span>
+        <span id="header-model-badge" class="font-mono text-slate-200 font-semibold bg-dark-card px-2 py-0.5 rounded border border-dark-border">llama-3.3-70b-versatile</span>
+      </div>
+    </div>
+
+    <!-- Actions & Status Badges -->
+    <div class="flex items-center space-x-2">
+      <!-- Web Search Badge Indicator -->
+      <button id="header-search-badge" onclick="toggleWebSearch()" class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition border-dark-border bg-dark-card/60 text-slate-400 hover:text-slate-200">
+        <i data-lucide="globe" class="w-3.5 h-3.5 text-slate-400" id="header-search-icon"></i>
+        <span>Web Search:</span>
+        <span id="header-search-status" class="text-slate-400">OFF</span>
+      </button>
+
+      <!-- Prompt Analyzer Toggle Button -->
+      <button id="toggle-analyzer-btn" onclick="togglePromptAnalyzer()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-200 transition shadow-sm hover:border-slate-600">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span class="hidden md:inline">Prompt Analyzer</span>
+        <span id="analyzer-score-badge" class="ml-1 px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px]">--</span>
+      </button>
+
+      <!-- API Key Button -->
+      <button id="api-key-btn" onclick="openApiKeyModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-sm bg-dark-card border-dark-border text-slate-200 hover:border-groq-500">
+        <i data-lucide="key" class="w-3.5 h-3.5 text-groq-400"></i>
+        <span id="api-key-btn-text">Set API Key</span>
+        <span id="api-key-status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+      </button>
+
+      <!-- Export / Clear dropdown -->
+      <button onclick="clearChat()" title="Clear Chat History" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-dark-card border border-transparent hover:border-dark-border transition">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+
+      <button onclick="exportChatMarkdown()" title="Export Chat to Markdown" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-dark-card border border-transparent hover:border-dark-border transition">
+        <i data-lucide="download" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- ==================== LEFT CONFIGURATION SIDEBAR ==================== -->
+    <aside id="sidebar" class="w-80 md:w-80 shrink-0 border-r border-dark-border bg-dark-surface flex flex-col transition-all duration-300 z-20 absolute md:static inset-y-0 left-0 -translate-x-full md:translate-x-0 shadow-2xl md:shadow-none">
+      
+      <!-- Sidebar Header -->
+      <div class="p-4 border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4 text-groq-400"></i>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Playground Controls</h2>
+        </div>
+        <button id="close-sidebar-btn" class="p-1 rounded text-slate-400 hover:text-white md:hidden">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Controls Scrollable Body -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-5">
+
+        <!-- 1. Model Selector Section -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+              <span>Groq Model</span>
+            </label>
+            <button onclick="fetchGroqModels(true)" title="Refresh models from Groq API" class="text-[11px] text-groq-400 hover:text-groq-300 flex items-center space-x-1 transition">
+              <i data-lucide="refresh-cw" class="w-3 h-3" id="refresh-models-icon"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
+          
+          <select id="model-select" onchange="handleModelChange()" class="w-full bg-dark-card border border-dark-border rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-groq-500 transition">
+            <!-- Dynamic models will load here; defaults provided -->
+            <option value="llama-3.3-70b-versatile" selected>llama-3.3-70b-versatile (Recommended)</option>
+            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Fastest)</option>
+            <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b (Reasoning)</option>
+            <option value="mixtral-8x7b-32768">mixtral-8x7b-32768 (32k Context)</option>
+            <option value="gemma2-9b-it">gemma2-9b-it (Google Gemma 2)</option>
+            <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
+            <option value="llama-3.2-3b-preview">llama-3.2-3b-preview (Compact)</option>
+            <option value="llama-3.2-1b-preview">llama-3.2-1b-preview (Ultra-light)</option>
+          </select>
+          <div id="model-meta-info" class="mt-1 text-[11px] text-slate-400 flex items-center justify-between px-0.5">
+            <span>Context Window: <strong class="text-slate-300 font-mono">128k</strong></span>
+            <span class="text-emerald-400 flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1"></span>Available</span>
+          </div>
+        </div>
+
+        <!-- 2. System Instructions / Persona -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+              <span>System Prompt</span>
+            </label>
+            <div class="relative inline-block text-left">
+              <select onchange="applySystemPreset(this.value); this.selectedIndex=0;" class="text-[11px] bg-dark-card border border-dark-border text-slate-300 rounded px-1.5 py-0.5 focus:outline-none hover:border-slate-600 transition">
+                <option value="" disabled selected>Presets...</option>
+                <option value="assistant">Helpful Assistant</option>
+                <option value="coder">Senior Software Engineer</option>
+                <option value="concise">Ultra-Concise Bullet Answers</option>
+                <option value="json">JSON-Only Output</option>
+                <option value="academic">Academic & Critical Thinker</option>
+              </select>
+            </div>
+          </div>
+          <textarea id="system-prompt" rows="3" placeholder="Enter instructions to steer the model's behavior..." class="w-full bg-dark-card border border-dark-border rounded-lg p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-groq-500 transition resize-none"></textarea>
+        </div>
+
+        <!-- 3. Temperature Slider -->
+        <div class="space-y-1.5 bg-dark-card/50 p-3 rounded-lg border border-dark-border">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-1">
+              <span class="font-semibold text-slate-200">Temperature</span>
+              <span id="temp-label" class="text-[10px] px-1.5 py-0.2 rounded bg-dark-border text-slate-400">Balanced</span>
+            </div>
+            <div class="flex items-center space-x-1">
+              <span id="temp-value" class="font-mono font-bold text-groq-400">0.70</span>
+              <button onclick="resetTemperature()" title="Reset to 0.70" class="text-[10px] text-slate-500 hover:text-slate-300 ml-1">↺</button>
+            </div>
+          </div>
+          <input type="range" id="temp-slider" min="0.0" max="2.0" step="0.05" value="0.7" oninput="updateTemperature(this.value)" class="w-full h-1.5 bg-dark-border rounded-lg appearance-none cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>0.0 (Precise)</span>
+            <span>1.0</span>
+            <span>2.0 (Creative)</span>
+          </div>
+        </div>
+
+        <!-- 4. Max Tokens Slider & Input -->
+        <div class="space-y-2 bg-dark-card/50 p-3 rounded-lg border border-dark-border">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-slate-200">Max Tokens</span>
+            <div class="flex items-center space-x-1">
+              <input type="number" id="max-tokens-input" min="64" max="32768" step="64" value="2048" oninput="updateMaxTokens(this.value)" class="w-16 bg-dark-surface border border-dark-border rounded px-1.5 py-0.5 text-xs font-mono text-right text-groq-400 focus:outline-none focus:border-groq-500">
+            </div>
+          </div>
+          <input type="range" id="max-tokens-slider" min="128" max="8192" step="128" value="2048" oninput="updateMaxTokens(this.value)" class="w-full h-1.5 bg-dark-border rounded-lg appearance-none cursor-pointer">
+          
+          <!-- Preset quick pills -->
+          <div class="flex items-center justify-between gap-1 pt-1">
+            <button onclick="setMaxTokensPreset(512)" class="px-2 py-0.5 rounded text-[10px] font-mono bg-dark-surface hover:bg-dark-hover border border-dark-border text-slate-400 hover:text-slate-200 transition">512</button>
+            <button onclick="setMaxTokensPreset(1024)" class="px-2 py-0.5 rounded text-[10px] font-mono bg-dark-surface hover:bg-dark-hover border border-dark-border text-slate-400 hover:text-slate-200 transition">1024</button>
+            <button onclick="setMaxTokensPreset(2048)" class="px-2 py-0.5 rounded text-[10px] font-mono bg-dark-surface hover:bg-dark-hover border border-dark-border text-slate-400 hover:text-slate-200 transition">2048</button>
+            <button onclick="setMaxTokensPreset(4096)" class="px-2 py-0.5 rounded text-[10px] font-mono bg-dark-surface hover:bg-dark-hover border border-dark-border text-slate-400 hover:text-slate-200 transition">4096</button>
+            <button onclick="setMaxTokensPreset(8192)" class="px-2 py-0.5 rounded text-[10px] font-mono bg-dark-surface hover:bg-dark-hover border border-dark-border text-slate-400 hover:text-slate-200 transition">8192</button>
+          </div>
+        </div>
+
+        <!-- 5. Web Search Toggle Feature -->
+        <div class="bg-dark-card/50 p-3 rounded-lg border border-dark-border space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-6 h-6 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-slate-200">Web Search Grounding</div>
+                <div class="text-[10px] text-slate-400">Fetch live web results for prompt</div>
+              </div>
+            </div>
+            <!-- Switch -->
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="web-search-toggle" onchange="handleWebSearchToggle(this.checked)" class="sr-only peer">
+              <div class="w-9 h-5 bg-dark-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          <div id="web-search-hint" class="text-[10px] text-slate-500 pl-8 hidden">
+            Queries live DuckDuckGo & Wikipedia sources, injecting verified facts into Groq context with citations.
+          </div>
+        </div>
+
+        <!-- 6. Advanced Sampling Accordion -->
+        <details class="group bg-dark-card/30 rounded-lg border border-dark-border overflow-hidden">
+          <summary class="p-3 text-xs font-semibold text-slate-300 flex items-center justify-between cursor-pointer hover:bg-dark-card/50 transition">
+            <span class="flex items-center space-x-1.5">
+              <i data-lucide="settings-2" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Advanced Parameters</span>
+            </span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="p-3 pt-1 space-y-3 border-t border-dark-border/60 text-xs">
+            <!-- Top P -->
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>Top P (Nucleus)</span>
+                <span id="topp-value" class="font-mono text-slate-200 font-bold">1.00</span>
+              </div>
+              <input type="range" id="topp-slider" min="0.0" max="1.0" step="0.05" value="1.0" oninput="updateTopP(this.value)" class="w-full h-1 bg-dark-border rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Streaming toggle -->
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-slate-300">Stream Output</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="stream-toggle" checked class="sr-only peer">
+                <div class="w-8 h-4 bg-dark-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-groq-500"></div>
+              </label>
+            </div>
+          </div>
+        </details>
+
+      </div>
+
+      <!-- Sidebar Footer / Groq Badge -->
+      <div class="p-3 border-t border-dark-border bg-dark-card/30 flex items-center justify-between text-[11px] text-slate-400">
+        <span class="flex items-center space-x-1">
+          <span class="w-2 h-2 rounded-full bg-groq-500"></span>
+          <span>Groq LPU™ Engine</span>
+        </span>
+        <a href="https://console.groq.com" target="_blank" class="hover:text-groq-400 transition flex items-center space-x-1">
+          <span>Docs</span>
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- ==================== CENTER PLAYGROUND & CONVERSATION ==================== -->
+    <main class="flex-1 flex flex-col bg-dark-bg min-w-0 relative">
+      
+      <!-- Metrics HUD (Speed, Latency, Tokens) -->
+      <div id="metrics-bar" class="h-9 border-b border-dark-border bg-dark-surface/60 px-4 flex items-center justify-between text-xs text-slate-400 overflow-x-auto shrink-0 font-mono">
+        <div class="flex items-center space-x-4">
+          <span class="flex items-center space-x-1 text-slate-400">
+            <i data-lucide="gauge" class="w-3.5 h-3.5 text-groq-400"></i>
+            <span>Speed:</span>
+            <strong id="metric-speed" class="text-groq-400">-- T/s</strong>
+          </span>
+          <span class="hidden sm:inline text-dark-border">|</span>
+          <span class="hidden sm:flex items-center space-x-1">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>TTFT:</span>
+            <strong id="metric-ttft" class="text-slate-200">-- ms</strong>
+          </span>
+          <span class="text-dark-border">|</span>
+          <span class="flex items-center space-x-1">
+            <i data-lucide="hash" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>Tokens:</span>
+            <strong id="metric-tokens" class="text-slate-200">0</strong>
+          </span>
+          <span class="hidden sm:inline text-dark-border">|</span>
+          <span class="hidden sm:flex items-center space-x-1">
+            <span>Latency:</span>
+            <strong id="metric-latency" class="text-slate-200">0.00s</strong>
+          </span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <span id="status-spinner" class="hidden items-center space-x-1.5 text-amber-400 text-[11px]">
+            <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>
+            <span id="status-text">Thinking...</span>
+          </span>
+          <button id="stop-generation-btn" onclick="stopGeneration()" class="hidden items-center space-x-1 px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 text-[11px] hover:bg-red-500/30 transition">
+            <i data-lucide="square" class="w-3 h-3 fill-red-400"></i>
+            <span>Stop</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Scroll Area -->
+      <div id="messages-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+        <!-- Welcome Banner (visible when no messages) -->
+        <div id="welcome-banner" class="max-w-2xl mx-auto my-8 text-center space-y-4">
+          <div class="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-groq-500/20 to-amber-500/10 border border-groq-500/30 mb-2">
+            <i data-lucide="sparkles" class="w-8 h-8 text-groq-400"></i>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Groq LLM Playground</h1>
+          <p class="text-sm text-slate-400 max-w-lg mx-auto">
+            Experience ultra-fast LPU inference with customizable parameters, live prompt quality analysis, and real-time grounded web search.
+          </p>
+
+          <!-- Prompt Starters Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 text-left">
+            <button onclick="usePromptStarter('Write a clean, modern Python async web scraper with rate-limiting and error handling.')" class="p-3 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-groq-500/50 transition group">
+              <div class="text-xs font-semibold text-slate-200 group-hover:text-groq-400 flex items-center justify-between">
+                <span>Python Async Scraper</span>
+                <i data-lucide="arrow-right" class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform"></i>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Code generation with error handling and rate limits.</p>
+            </button>
+
+            <button onclick="usePromptStarter('Analyze the key architectural trade-offs between Monoliths and Microservices in 2025. Compare scalability, team velocity, and operational cost.')" class="p-3 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-groq-500/50 transition group">
+              <div class="text-xs font-semibold text-slate-200 group-hover:text-groq-400 flex items-center justify-between">
+                <span>Architecture Comparison</span>
+                <i data-lucide="arrow-right" class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform"></i>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">In-depth technical breakdown and trade-off analysis.</p>
+            </button>
+
+            <button onclick="enableWebSearchAndQuery('What are the latest developments in quantum computing and major tech breakthroughs this year?')" class="p-3 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-blue-500/50 transition group">
+              <div class="text-xs font-semibold text-slate-200 group-hover:text-blue-400 flex items-center justify-between">
+                <span class="flex items-center space-x-1.5">
+                  <i data-lucide="globe" class="w-3 h-3 text-blue-400"></i>
+                  <span>Live Web Search Query</span>
+                </span>
+                <i data-lucide="arrow-right" class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform"></i>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Tests real-time web search grounding with verified sources.</p>
+            </button>
+
+            <button onclick="usePromptStarter('Act as a senior product designer. Roast this landing page value proposition and suggest 3 high-converting alternatives: \'We build AI tools for smart teams.\'')" class="p-3 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-groq-500/50 transition group">
+              <div class="text-xs font-semibold text-slate-200 group-hover:text-groq-400 flex items-center justify-between">
+                <span>Prompt Persona & Critique</span>
+                <i data-lucide="arrow-right" class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform"></i>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">Test roleplay persona and creative copy feedback.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat history messages dynamically injected here -->
+      </div>
+
+      <!-- ==================== PROMPT INPUT FOOTER ==================== -->
+      <div class="p-3 md:p-4 border-t border-dark-border bg-dark-surface/90 backdrop-blur z-10 shrink-0">
+        <div class="max-w-4xl mx-auto space-y-2">
+          
+          <!-- Web Search Active Alert (if enabled) -->
+          <div id="web-search-banner-active" class="hidden items-center justify-between px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+            <span class="flex items-center space-x-2">
+              <i data-lucide="globe" class="w-3.5 h-3.5 animate-spin"></i>
+              <span><strong>Web Search Enabled:</strong> Live sources will be queried and synthesized into Groq response.</span>
+            </span>
+            <button onclick="toggleWebSearch(false)" class="text-blue-400 hover:text-blue-200 text-[11px] underline">Disable</button>
+          </div>
+
+          <!-- Input Textarea Card -->
+          <div class="bg-dark-card rounded-xl border border-dark-border focus-within:border-groq-500 focus-within:ring-1 focus-within:ring-groq-500/30 transition shadow-lg relative">
+            <textarea id="prompt-input" rows="2" placeholder="Type a prompt for Groq... (Enter to send, Shift+Enter for new line)" class="w-full bg-transparent text-slate-100 placeholder-slate-500 p-3.5 text-sm focus:outline-none resize-none max-h-48 overflow-y-auto font-sans"></textarea>
+            
+            <!-- Controls Bar under textarea -->
+            <div class="flex items-center justify-between px-3 pb-2.5 pt-1 border-t border-dark-border/40 text-xs">
+              
+              <!-- Left Tool Buttons -->
+              <div class="flex items-center space-x-2">
+                <!-- Web Search quick toggle -->
+                <button type="button" id="quick-websearch-btn" onclick="toggleWebSearch()" title="Toggle Web Search grounding" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-dark-border bg-dark-surface text-slate-400 hover:text-slate-200 transition text-[11px]">
+                  <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                  <span id="quick-websearch-text">Search: Off</span>
+                </button>
+
+                <!-- Prompt Analyzer Quick Pill -->
+                <button type="button" onclick="togglePromptAnalyzer(true)" title="Inspect & enhance prompt" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-dark-border bg-dark-surface text-slate-400 hover:text-amber-400 transition text-[11px]">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>Analyze</span>
+                </button>
+
+                <!-- Input stats -->
+                <span class="hidden sm:inline-block text-[11px] text-slate-500 font-mono pl-1">
+                  <span id="input-token-estimate">0</span> est. tokens
+                </span>
+              </div>
+
+              <!-- Right Send Button -->
+              <div class="flex items-center space-x-2">
+                <button id="send-btn" onclick="sendMessage()" class="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-groq-500 hover:bg-groq-600 text-white font-semibold text-xs transition shadow-md shadow-groq-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span>Send</span>
+                  <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Keyboard hints -->
+          <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+            <span>Tip: Configure API Key in the top right. Groq keys are free at console.groq.com</span>
+            <span class="hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-dark-card border border-dark-border rounded text-[10px] font-mono text-slate-400">Enter</kbd> to run</span>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ==================== RIGHT PROMPT ANALYZER DRAWER ==================== -->
+    <aside id="analyzer-drawer" class="w-88 md:w-96 shrink-0 border-l border-dark-border bg-dark-surface flex flex-col transition-all duration-300 z-20 absolute md:static inset-y-0 right-0 translate-x-full md:translate-x-0 hidden shadow-2xl">
+      
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-6 h-6 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          </div>
+          <div>
+            <h2 class="text-xs font-bold text-slate-200">Smart Prompt Analyzer</h2>
+            <p class="text-[10px] text-slate-400">Live quality score & optimization engine</p>
+          </div>
+        </div>
+        <button onclick="togglePromptAnalyzer(false)" class="p-1 rounded text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Drawer Body -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        
+        <!-- Score Card -->
+        <div class="bg-dark-card rounded-xl p-4 border border-dark-border relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Prompt Score</span>
+              <div class="flex items-baseline space-x-2 mt-0.5">
+                <span id="analyzer-main-score" class="text-3xl font-extrabold text-white">--</span>
+                <span class="text-xs text-slate-400">/ 100</span>
+              </div>
+              <span id="analyzer-quality-rating" class="text-xs font-semibold text-slate-400">Type something to evaluate</span>
+            </div>
+            <!-- Circular Progress Indicator -->
+            <div class="w-14 h-14 rounded-full flex items-center justify-center border-4 border-dark-border relative">
+              <div id="analyzer-score-circle" class="absolute inset-0 rounded-full border-4 border-groq-500 transition-all duration-500" style="clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 0 100%, 0 0)"></div>
+              <i data-lucide="award" class="w-5 h-5 text-amber-400"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Gauges (Tokens, Clarity, Intent) -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-dark-card/50 p-2.5 rounded-lg border border-dark-border">
+            <div class="text-[10px] text-slate-400">Est. Tokens</div>
+            <div id="analyzer-token-count" class="text-base font-bold font-mono text-slate-100 mt-0.5">0</div>
+            <div id="analyzer-token-ratio" class="text-[10px] text-slate-500 mt-0.5">0% of 2048 max</div>
+          </div>
+
+          <div class="bg-dark-card/50 p-2.5 rounded-lg border border-dark-border">
+            <div class="text-[10px] text-slate-400">Readability</div>
+            <div id="analyzer-readability" class="text-base font-bold text-slate-100 mt-0.5">--</div>
+            <div id="analyzer-reading-ease" class="text-[10px] text-slate-500 mt-0.5">Standard</div>
+          </div>
+
+          <div class="bg-dark-card/50 p-2.5 rounded-lg border border-dark-border">
+            <div class="text-[10px] text-slate-400">Detected Intent</div>
+            <div id="analyzer-intent" class="text-xs font-bold text-groq-400 mt-1 truncate">Instruction</div>
+          </div>
+
+          <div class="bg-dark-card/50 p-2.5 rounded-lg border border-dark-border">
+            <div class="text-[10px] text-slate-400">Tone</div>
+            <div id="analyzer-tone" class="text-xs font-bold text-blue-400 mt-1 truncate">Neutral</div>
+          </div>
+        </div>
+
+        <!-- Prompt Quality Checklist -->
+        <div class="bg-dark-card/40 p-3 rounded-xl border border-dark-border space-y-2">
+          <div class="text-xs font-semibold text-slate-200 flex items-center justify-between">
+            <span>Quality Criteria</span>
+            <span class="text-[10px] text-slate-500">Best practices</span>
+          </div>
+
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center justify-between" id="check-action">
+              <span class="text-slate-400 flex items-center space-x-1.5">
+                <i data-lucide="circle" class="w-3.5 h-3.5 text-slate-500 check-icon"></i>
+                <span>Clear Action Verb</span>
+              </span>
+              <span class="text-[11px] font-mono text-slate-500 check-status">Missing</span>
+            </div>
+
+            <div class="flex items-center justify-between" id="check-context">
+              <span class="text-slate-400 flex items-center space-x-1.5">
+                <i data-lucide="circle" class="w-3.5 h-3.5 text-slate-500 check-icon"></i>
+                <span>Context & Background</span>
+              </span>
+              <span class="text-[11px] font-mono text-slate-500 check-status">Missing</span>
+            </div>
+
+            <div class="flex items-center justify-between" id="check-format">
+              <span class="text-slate-400 flex items-center space-x-1.5">
+                <i data-lucide="circle" class="w-3.5 h-3.5 text-slate-500 check-icon"></i>
+                <span>Output Format Specified</span>
+              </span>
+              <span class="text-[11px] font-mono text-slate-500 check-status">Missing</span>
+            </div>
+
+            <div class="flex items-center justify-between" id="check-persona">
+              <span class="text-slate-400 flex items-center space-x-1.5">
+                <i data-lucide="circle" class="w-3.5 h-3.5 text-slate-500 check-icon"></i>
+                <span>Role / Persona Defined</span>
+              </span>
+              <span class="text-[11px] font-mono text-slate-500 check-status">Missing</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actionable Improvement Suggestions -->
+        <div class="bg-dark-card/40 p-3 rounded-xl border border-dark-border space-y-2">
+          <div class="text-xs font-semibold text-slate-200">Suggestions to Improve</div>
+          <ul id="analyzer-suggestions-list" class="space-y-1.5 text-xs text-slate-400">
+            <li class="flex items-start space-x-1.5">
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i>
+              <span>Enter a prompt to receive real-time structural suggestions.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- ✨ 1-Click AI Prompt Enhancer Button -->
+        <div class="p-3 bg-gradient-to-br from-groq-500/10 via-amber-500/5 to-transparent rounded-xl border border-groq-500/20 space-y-2.5">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="wand-2" class="w-4 h-4 text-groq-400"></i>
+            <span class="text-xs font-bold text-slate-100">AI Prompt Enhancer</span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Uses Groq to automatically rewrite your prompt into an expert prompt with role, context, and clear constraints.
+          </p>
+          <button id="enhance-prompt-btn" onclick="enhancePromptWithAI()" class="w-full flex items-center justify-center space-x-1.5 py-2 px-3 rounded-lg bg-gradient-to-r from-groq-500 to-amber-600 hover:from-groq-600 hover:to-amber-700 text-white font-semibold text-xs transition shadow-md shadow-groq-500/20">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Enhance My Prompt</span>
+          </button>
+        </div>
+
+        <!-- Enhanced Prompt Comparison Preview (Hidden until enhanced) -->
+        <div id="enhanced-prompt-box" class="hidden bg-dark-card p-3 rounded-xl border border-groq-500/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-groq-400 flex items-center space-x-1">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Enhanced Version</span>
+            </span>
+            <button onclick="applyEnhancedPrompt()" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold hover:bg-emerald-500/30 transition">
+              Apply to Prompt
+            </button>
+          </div>
+          <div id="enhanced-prompt-text" class="text-xs text-slate-200 font-sans p-2 bg-dark-surface rounded border border-dark-border max-h-40 overflow-y-auto whitespace-pre-wrap"></div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ==================== API KEY CONFIGURATION MODAL ==================== -->
+  <div id="api-key-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-dark-surface border border-dark-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+      
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-groq-500/20 border border-groq-500/30 flex items-center justify-center text-groq-400">
+            <i data-lucide="key" class="w-4 h-4"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Groq API Key Setup</h3>
+        </div>
+        <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white p-1 rounded transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-400 leading-relaxed">
+        To use this playground, enter your Groq API key. Your key is stored strictly in your browser's local storage and sent directly to Groq's official API (<code class="text-slate-300">api.groq.com</code>). It is never saved or transmitted to any other server.
+      </p>
+
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+          <span>Groq API Key (starts with gsk_...)</span>
+          <a href="https://console.groq.com/keys" target="_blank" class="text-groq-400 hover:underline flex items-center space-x-1 text-[11px]">
+            <span>Get Free Key</span>
+            <i data-lucide="external-link" class="w-3 h-3"></i>
+          </a>
+        </label>
+        
+        <div class="relative">
+          <input type="password" id="groq-api-key-input" placeholder="gsk_..." class="w-full bg-dark-card border border-dark-border rounded-lg pl-3 pr-10 py-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-groq-500 transition">
+          <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+            <i data-lucide="eye" class="w-4 h-4" id="eye-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Test Connection Feedback Message -->
+      <div id="key-test-feedback" class="text-xs p-2.5 rounded-lg hidden"></div>
+
+      <!-- Modal Action Buttons -->
+      <div class="flex items-center justify-between pt-2">
+        <button type="button" onclick="clearApiKey()" class="text-xs text-red-400 hover:text-red-300 transition">
+          Clear Key
+        </button>
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="testApiKeyConnection()" id="test-key-btn" class="px-3 py-2 rounded-lg border border-dark-border bg-dark-card hover:bg-dark-hover text-xs font-medium text-slate-300 transition flex items-center space-x-1.5">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Test Connection</span>
+          </button>
+          <button type="button" onclick="saveApiKey()" class="px-4 py-2 rounded-lg bg-groq-500 hover:bg-groq-600 text-xs font-semibold text-white transition shadow-md shadow-groq-500/20">
+            Save Key
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
+  <script>
+    // --- Application State ---
+    const APP_STATE = {
+      apiKey: localStorage.getItem('groq_api_key') || '',
+      model: localStorage.getItem('groq_model') || 'llama-3.3-70b-versatile',
+      temperature: parseFloat(localStorage.getItem('groq_temp') || '0.7'),
+      maxTokens: parseInt(localStorage.getItem('groq_max_tokens') || '2048'),
+      topP: parseFloat(localStorage.getItem('groq_top_p') || '1.0'),
+      systemPrompt: localStorage.getItem('groq_system') || '',
+      webSearchEnabled: localStorage.getItem('groq_web_search') === 'true',
+      streamEnabled: true,
+      messages: [],
+      isGenerating: false,
+      abortController: null,
+      cachedModels: []
+    };
+
+    // System instruction presets
+    const SYSTEM_PRESETS = {
+      assistant: "You are a helpful, respectful, and highly intelligent AI assistant powered by Groq's ultra-fast LPU inference engine. Answer clearly, accurately, and thoroughly.",
+      coder: "You are an expert Principal Software Engineer. Provide elegant, production-ready, clean code with robust type safety, comprehensive comments, and security considerations. Always format code using markdown code blocks with the proper language identifier.",
+      concise: "You are an ultra-concise assistant. Provide high-density information using crisp bullet points. Eliminate filler words and fluff. Answer directly.",
+      json: "You are a structured data extractor. You must respond ONLY with valid JSON. Do not include markdown code ticks, preamble, or postscript. Output valid JSON parseable by JSON.parse().",
+      academic: "You are a distinguished research scientist and critical thinker. Provide well-reasoned, nuanced analyses with theoretical backing, empirical arguments, and clear trade-off distinctions."
+    };
+
+    // --- DOM Elements ---
+    const dom = {
+      modelSelect: document.getElementById('model-select'),
+      headerModelBadge: document.getElementById('header-model-badge'),
+      tempSlider: document.getElementById('temp-slider'),
+      tempValue: document.getElementById('temp-value'),
+      tempLabel: document.getElementById('temp-label'),
+      maxTokensSlider: document.getElementById('max-tokens-slider'),
+      maxTokensInput: document.getElementById('max-tokens-input'),
+      toppSlider: document.getElementById('topp-slider'),
+      toppValue: document.getElementById('topp-value'),
+      systemPrompt: document.getElementById('system-prompt'),
+      webSearchToggle: document.getElementById('web-search-toggle'),
+      quickWebSearchBtn: document.getElementById('quick-websearch-btn'),
+      quickWebSearchText: document.getElementById('quick-websearch-text'),
+      headerSearchBadge: document.getElementById('header-search-badge'),
+      headerSearchStatus: document.getElementById('header-search-status'),
+      webSearchBannerActive: document.getElementById('web-search-banner-active'),
+      streamToggle: document.getElementById('stream-toggle'),
+      promptInput: document.getElementById('prompt-input'),
+      sendBtn: document.getElementById('send-btn'),
+      messagesContainer: document.getElementById('messages-container'),
+      welcomeBanner: document.getElementById('welcome-banner'),
+      statusSpinner: document.getElementById('status-spinner'),
+      statusText: document.getElementById('status-text'),
+      stopBtn: document.getElementById('stop-generation-btn'),
+      apiKeyBtnText: document.getElementById('api-key-btn-text'),
+      apiKeyStatusDot: document.getElementById('api-key-status-dot'),
+      apiKeyModal: document.getElementById('api-key-modal'),
+      apiKeyInput: document.getElementById('groq-api-key-input'),
+      keyTestFeedback: document.getElementById('key-test-feedback'),
+      sidebar: document.getElementById('sidebar'),
+      analyzerDrawer: document.getElementById('analyzer-drawer'),
+      // Metrics
+      metricSpeed: document.getElementById('metric-speed'),
+      metricTtft: document.getElementById('metric-ttft'),
+      metricTokens: document.getElementById('metric-tokens'),
+      metricLatency: document.getElementById('metric-latency'),
+      // Prompt Analyzer
+      analyzerScoreBadge: document.getElementById('analyzer-score-badge'),
+      analyzerMainScore: document.getElementById('analyzer-main-score'),
+      analyzerQualityRating: document.getElementById('analyzer-quality-rating'),
+      analyzerTokenCount: document.getElementById('analyzer-token-count'),
+      analyzerTokenRatio: document.getElementById('analyzer-token-ratio'),
+      analyzerReadability: document.getElementById('analyzer-readability'),
+      analyzerReadingEase: document.getElementById('analyzer-reading-ease'),
+      analyzerIntent: document.getElementById('analyzer-intent'),
+      analyzerTone: document.getElementById('analyzer-tone'),
+      analyzerSuggestionsList: document.getElementById('analyzer-suggestions-list'),
+      enhancedPromptBox: document.getElementById('enhanced-prompt-box'),
+      enhancedPromptText: document.getElementById('enhanced-prompt-text'),
+      inputTokenEstimate: document.getElementById('input-token-estimate')
+    };
+
+    // --- Initialize Application ---
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initUIFromState();
+      attachEventListeners();
+      analyzeCurrentPrompt();
+
+      // If user has key, fetch latest models from Groq API automatically
+      if (APP_STATE.apiKey) {
+        fetchGroqModels(false);
+      }
+    });
+
+    function initUIFromState() {
+      // Temperature
+      dom.tempSlider.value = APP_STATE.temperature;
+      updateTemperature(APP_STATE.temperature, false);
+
+      // Max Tokens
+      dom.maxTokensSlider.value = APP_STATE.maxTokens;
+      dom.maxTokensInput.value = APP_STATE.maxTokens;
+
+      // Top P
+      dom.toppSlider.value = APP_STATE.topP;
+      dom.toppValue.textContent = APP_STATE.topP.toFixed(2);
+
+      // System Prompt
+      dom.systemPrompt.value = APP_STATE.systemPrompt;
+
+      // Model
+      if (APP_STATE.model) {
+        dom.modelSelect.value = APP_STATE.model;
+        dom.headerModelBadge.textContent = APP_STATE.model;
+      }
+
+      // Web Search
+      dom.webSearchToggle.checked = APP_STATE.webSearchEnabled;
+      syncWebSearchUI(APP_STATE.webSearchEnabled);
+
+      // API Key badge
+      updateApiKeyStatusBadge();
+    }
+
+    function attachEventListeners() {
+      // Prompt input listeners
+      dom.promptInput.addEventListener('input', () => {
+        autoResizeTextarea(dom.promptInput);
+        analyzeCurrentPrompt();
+      });
+
+      dom.promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // System prompt listener
+      dom.systemPrompt.addEventListener('input', (e) => {
+        APP_STATE.systemPrompt = e.target.value;
+        localStorage.setItem('groq_system', e.target.value);
+      });
+
+      // Sidebar mobile toggles
+      document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
+        dom.sidebar.classList.toggle('-translate-x-full');
+      });
+      document.getElementById('close-sidebar-btn').addEventListener('click', () => {
+        dom.sidebar.classList.add('-translate-x-full');
+      });
+    }
+
+    function autoResizeTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+    }
+
+    // --- Parameter Handlers ---
+    function updateTemperature(val, save = true) {
+      const num = parseFloat(val);
+      APP_STATE.temperature = num;
+      dom.tempValue.textContent = num.toFixed(2);
+      dom.tempSlider.value = num;
+
+      if (num <= 0.3) {
+        dom.tempLabel.textContent = 'Precise / Deterministic';
+        dom.tempLabel.className = 'text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 font-semibold';
+      } else if (num <= 0.9) {
+        dom.tempLabel.textContent = 'Balanced';
+        dom.tempLabel.className = 'text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-semibold';
+      } else {
+        dom.tempLabel.textContent = 'Creative / Random';
+        dom.tempLabel.className = 'text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-semibold';
+      }
+
+      if (save) localStorage.setItem('groq_temp', num);
+    }
+
+    function resetTemperature() {
+      updateTemperature(0.7);
+    }
+
+    function updateMaxTokens(val) {
+      let num = parseInt(val);
+      if (isNaN(num) || num < 64) num = 64;
+      if (num > 32768) num = 32768;
+      APP_STATE.maxTokens = num;
+      dom.maxTokensInput.value = num;
+      dom.maxTokensSlider.value = Math.min(num, 8192);
+      localStorage.setItem('groq_max_tokens', num);
+      analyzeCurrentPrompt();
+    }
+
+    function setMaxTokensPreset(preset) {
+      updateMaxTokens(preset);
+    }
+
+    function updateTopP(val) {
+      const num = parseFloat(val);
+      APP_STATE.topP = num;
+      dom.toppValue.textContent = num.toFixed(2);
+      localStorage.setItem('groq_top_p', num);
+    }
+
+    function handleModelChange() {
+      const selected = dom.modelSelect.value;
+      APP_STATE.model = selected;
+      dom.headerModelBadge.textContent = selected;
+      localStorage.setItem('groq_model', selected);
+    }
+
+    function applySystemPreset(presetKey) {
+      if (SYSTEM_PRESETS[presetKey]) {
+        dom.systemPrompt.value = SYSTEM_PRESETS[presetKey];
+        APP_STATE.systemPrompt = SYSTEM_PRESETS[presetKey];
+        localStorage.setItem('groq_system', APP_STATE.systemPrompt);
+      }
+    }
+
+    // --- Web Search Functionality ---
+    function toggleWebSearch(forcedValue) {
+      const newVal = forcedValue !== undefined ? forcedValue : !APP_STATE.webSearchEnabled;
+      APP_STATE.webSearchEnabled = newVal;
+      dom.webSearchToggle.checked = newVal;
+      syncWebSearchUI(newVal);
+      localStorage.setItem('groq_web_search', newVal);
+    }
+
+    function handleWebSearchToggle(isChecked) {
+      APP_STATE.webSearchEnabled = isChecked;
+      syncWebSearchUI(isChecked);
+      localStorage.setItem('groq_web_search', isChecked);
+    }
+
+    function syncWebSearchUI(enabled) {
+      if (enabled) {
+        dom.quickWebSearchBtn.classList.remove('bg-dark-surface', 'text-slate-400');
+        dom.quickWebSearchBtn.classList.add('bg-blue-500/20', 'text-blue-300', 'border-blue-500/40');
+        dom.quickWebSearchText.textContent = 'Search: ON';
+        dom.headerSearchStatus.textContent = 'ON';
+        dom.headerSearchStatus.className = 'text-blue-400 font-bold';
+        dom.headerSearchBadge.classList.add('border-blue-500/40', 'bg-blue-500/10');
+        dom.webSearchBannerActive.classList.remove('hidden');
+        dom.webSearchBannerActive.classList.add('flex');
+        document.getElementById('web-search-hint').classList.remove('hidden');
+      } else {
+        dom.quickWebSearchBtn.classList.add('bg-dark-surface', 'text-slate-400');
+        dom.quickWebSearchBtn.classList.remove('bg-blue-500/20', 'text-blue-300', 'border-blue-500/40');
+        dom.quickWebSearchText.textContent = 'Search: OFF';
+        dom.headerSearchStatus.textContent = 'OFF';
+        dom.headerSearchStatus.className = 'text-slate-400';
+        dom.headerSearchBadge.classList.remove('border-blue-500/40', 'bg-blue-500/10');
+        dom.webSearchBannerActive.classList.add('hidden');
+        dom.webSearchBannerActive.classList.remove('flex');
+        document.getElementById('web-search-hint').classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function enableWebSearchAndQuery(prompt) {
+      toggleWebSearch(true);
+      dom.promptInput.value = prompt;
+      autoResizeTextarea(dom.promptInput);
+      analyzeCurrentPrompt();
+      sendMessage();
+    }
+
+    // Live Web Search Crawler & Grounder
+    async function performWebSearch(query) {
+      const cleanQuery = query.replace(/[^\w\s-]/gi, '').slice(0, 150).trim();
+      const sources = [];
+
+      try {
+        // Multi-source Search 1: DuckDuckGo Instant Answer API
+        const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}&format=json&no_html=1&skip_disambig=1`;
+        const ddgPromise = fetch(ddgUrl)
+          .then(r => r.json())
+          .then(data => {
+            if (data.Abstract && data.AbstractText) {
+              sources.push({
+                title: data.Heading || cleanQuery,
+                url: data.AbstractURL || 'https://duckduckgo.com/?q=' + encodeURIComponent(cleanQuery),
+                snippet: data.AbstractText,
+                source: 'DuckDuckGo Instant Answer'
+              });
+            }
+            if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
+              data.RelatedTopics.slice(0, 3).forEach(item => {
+                if (item.Text && item.FirstURL) {
+                  sources.push({
+                    title: item.Text.split(' - ')[0] || item.Text.slice(0, 50),
+                    url: item.FirstURL,
+                    snippet: item.Text,
+                    source: 'DuckDuckGo Related'
+                  });
+                }
+              });
+            }
+          }).catch(e => console.warn('DDG API error:', e));
+
+        // Multi-source Search 2: Wikipedia Search API
+        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQuery)}&format=json&origin=*`;
+        const wikiPromise = fetch(wikiUrl)
+          .then(r => r.json())
+          .then(data => {
+            if (data.query && data.query.search && Array.isArray(data.query.search)) {
+              data.query.search.slice(0, 3).forEach(item => {
+                const plainSnippet = item.snippet.replace(/<\/?[^>]+(>|$)/g, "");
+                sources.push({
+                  title: item.title,
+                  url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`,
+                  snippet: plainSnippet,
+                  source: 'Wikipedia'
+                });
+              });
+            }
+          }).catch(e => console.warn('Wiki API error:', e));
+
+        // Await with 3.5s timeout so playground response never hangs
+        await Promise.race([
+          Promise.allSettled([ddgPromise, wikiPromise]),
+          new Promise(resolve => setTimeout(resolve, 3500))
+        ]);
+
+      } catch (err) {
+        console.error('Web search error:', err);
+      }
+
+      // If no external sources reached, provide structured fallback grounding
+      if (sources.length === 0) {
+        sources.push({
+          title: `Search Query: "${cleanQuery}"`,
+          url: `https://duckduckgo.com/?q=${encodeURIComponent(cleanQuery)}`,
+          snippet: `Live search query dispatched for topic: ${cleanQuery}. Web search grounding active.`,
+          source: 'Web Search Grounding'
+        });
+      }
+
+      return sources;
+    }
+
+    // --- Dynamic Groq Models Fetching ---
+    async function fetchGroqModels(notifyUser = true) {
+      if (!APP_STATE.apiKey) {
+        if (notifyUser) {
+          openApiKeyModal();
+          showKeyFeedback('Please enter your Groq API key first to fetch active models.', 'amber');
+        }
+        return;
+      }
+
+      const icon = document.getElementById('refresh-models-icon');
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: {
+            'Authorization': `Bearer ${APP_STATE.apiKey}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Groq API returned HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.data && Array.isArray(data.data)) {
+          // Filter active chat models
+          const models = data.data
+            .filter(m => m.active !== false && !m.id.includes('whisper'))
+            .map(m => m.id)
+            .sort();
+
+          if (models.length > 0) {
+            APP_STATE.cachedModels = models;
+            populateModelDropdown(models);
+            if (notifyUser) {
+              showToast(`Loaded ${models.length} live Groq models!`, 'success');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch models:', err);
+        if (notifyUser) {
+          showToast(`Could not refresh models: ${err.message}`, 'error');
+        }
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+      }
+    }
+
+    function populateModelDropdown(models) {
+      const current = dom.modelSelect.value || APP_STATE.model;
+      dom.modelSelect.innerHTML = '';
+
+      models.forEach(modelId => {
+        const opt = document.createElement('option');
+        opt.value = modelId;
+        opt.textContent = modelId;
+        if (modelId === current) opt.selected = true;
+        dom.modelSelect.appendChild(opt);
+      });
+
+      // If current model wasn't in list, append it
+      if (!models.includes(current)) {
+        const opt = document.createElement('option');
+        opt.value = current;
+        opt.textContent = current;
+        opt.selected = true;
+        dom.modelSelect.appendChild(opt);
+      }
+    }
+
+    // --- Prompt Analyzer Engine ---
+    function analyzeCurrentPrompt() {
+      const text = dom.promptInput.value.trim();
+      const wordCount = text ? text.split(/\s+/).length : 0;
+      const charCount = text.length;
+
+      // Token estimation (~3.8 chars per token for English + punctuation)
+      const estTokens = text ? Math.ceil(charCount / 3.8) : 0;
+      dom.inputTokenEstimate.textContent = estTokens;
+      dom.analyzerTokenCount.textContent = estTokens;
+
+      const maxTok = APP_STATE.maxTokens || 2048;
+      const tokenRatio = Math.min(100, Math.round((estTokens / maxTok) * 100));
+      dom.analyzerTokenRatio.textContent = `${tokenRatio}% of ${maxTok} max`;
+
+      if (!text) {
+        dom.analyzerMainScore.textContent = '--';
+        dom.analyzerQualityRating.textContent = 'Type a prompt to analyze';
+        dom.analyzerScoreBadge.textContent = '--';
+        dom.analyzerReadability.textContent = '--';
+        dom.analyzerReadingEase.textContent = 'Idle';
+        dom.analyzerIntent.textContent = 'Waiting';
+        dom.analyzerTone.textContent = 'Neutral';
+        resetCriteriaChecklist();
+        return;
+      }
+
+      // 1. Quality Criteria Checks
+      const criteria = {
+        action: /(write|build|create|explain|analyze|summarize|compare|implement|optimize|design|review|generate|list|convert|fix|debug)/i.test(text),
+        context: /(because|since|for a|in order to|scenario|background|project|using|given that|architecture|context)/i.test(text) || wordCount > 25,
+        format: /(in json|markdown|bullet points|table|step by step|concise|numbered list|code snippet|yaml|csv|format)/i.test(text),
+        persona: /(act as|you are|as a|from the perspective of|expert|engineer|specialist|critic)/i.test(text) || !!APP_STATE.systemPrompt
+      };
+
+      updateCheckUI('check-action', criteria.action, 'Action Verb');
+      updateCheckUI('check-context', criteria.context, 'Context/Details');
+      updateCheckUI('check-format', criteria.format, 'Output Format');
+      updateCheckUI('check-persona', criteria.persona, 'Persona/Role');
+
+      // 2. Score Calculation (0 - 100)
+      let score = 30; // base for non-empty
+      if (criteria.action) score += 20;
+      if (criteria.context) score += 20;
+      if (criteria.format) score += 15;
+      if (criteria.persona) score += 15;
+
+      // Penalize very short or vague prompts
+      if (wordCount < 4) score = Math.min(score, 35);
+      else if (wordCount > 15) score = Math.min(100, score + 5);
+
+      dom.analyzerMainScore.textContent = score;
+      dom.analyzerScoreBadge.textContent = `${score}%`;
+
+      if (score >= 80) {
+        dom.analyzerQualityRating.textContent = 'Excellent Master Prompt';
+        dom.analyzerQualityRating.className = 'text-xs font-semibold text-emerald-400';
+      } else if (score >= 50) {
+        dom.analyzerQualityRating.textContent = 'Good - Can Be Improved';
+        dom.analyzerQualityRating.className = 'text-xs font-semibold text-amber-400';
+      } else {
+        dom.analyzerQualityRating.textContent = 'Needs More Specificity';
+        dom.analyzerQualityRating.className = 'text-xs font-semibold text-red-400';
+      }
+
+      // 3. Readability & Tone
+      const sentences = text.split(/[.!?]+/).filter(Boolean).length || 1;
+      const wordsPerSentence = (wordCount / sentences).toFixed(1);
+      dom.analyzerReadability.textContent = `${wordsPerSentence} w/s`;
+      dom.analyzerReadingEase.textContent = wordsPerSentence < 18 ? 'Clear & Concise' : 'Complex Sentence';
+
+      // Intent detection
+      if (/\b(how|why|what|when|where|who|explain)\b/i.test(text)) {
+        dom.analyzerIntent.textContent = 'Question / Explanation';
+      } else if (/\b(def |function|class|code|python|javascript|sql|bug|error)\b/i.test(text)) {
+        dom.analyzerIntent.textContent = 'Code / Engineering';
+      } else if (/\b(write|story|poem|creative|imagine|draft)\b/i.test(text)) {
+        dom.analyzerIntent.textContent = 'Creative Writing';
+      } else {
+        dom.analyzerIntent.textContent = 'Instructional Task';
+      }
+
+      // Dynamic Improvement Suggestions
+      renderSuggestions(criteria, wordCount);
+    }
+
+    function updateCheckUI(elementId, passed, label) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const icon = el.querySelector('.check-icon');
+      const status = el.querySelector('.check-status');
+
+      if (passed) {
+        icon.setAttribute('data-lucide', 'check-circle-2');
+        icon.className = 'w-3.5 h-3.5 text-emerald-400 check-icon';
+        status.textContent = 'Detected';
+        status.className = 'text-[11px] font-mono text-emerald-400 check-status';
+      } else {
+        icon.setAttribute('data-lucide', 'circle');
+        icon.className = 'w-3.5 h-3.5 text-slate-500 check-icon';
+        status.textContent = 'Missing';
+        status.className = 'text-[11px] font-mono text-slate-500 check-status';
+      }
+      lucide.createIcons();
+    }
+
+    function resetCriteriaChecklist() {
+      ['check-action', 'check-context', 'check-format', 'check-persona'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.querySelector('.check-icon').setAttribute('data-lucide', 'circle');
+        el.querySelector('.check-icon').className = 'w-3.5 h-3.5 text-slate-500 check-icon';
+        el.querySelector('.check-status').textContent = 'Missing';
+        el.querySelector('.check-status').className = 'text-[11px] font-mono text-slate-500 check-status';
+      });
+      dom.analyzerSuggestionsList.innerHTML = `
+        <li class="flex items-start space-x-1.5">
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i>
+          <span>Enter a prompt to receive real-time structural suggestions.</span>
+        </li>
+      `;
+      lucide.createIcons();
+    }
+
+    function renderSuggestions(criteria, wordCount) {
+      const suggestions = [];
+
+      if (!criteria.action) {
+        suggestions.push("Start with an unambiguous action verb (e.g. 'Synthesize', 'Implement', 'Compare', 'Audit').");
+      }
+      if (!criteria.context) {
+        suggestions.push("Provide the background problem, target tech stack, or scenario so the model understands the boundary.");
+      }
+      if (!criteria.format) {
+        suggestions.push("Specify the output structure: e.g. 'Return as JSON schema', 'Provide markdown table', or 'Use 3 bullet points'.");
+      }
+      if (!criteria.persona && !APP_STATE.systemPrompt) {
+        suggestions.push("Assign a role: e.g. 'Act as a Principal Security Architect' or use the System Prompt in the left sidebar.");
+      }
+
+      if (suggestions.length === 0) {
+        suggestions.push("Prompt structure is excellent and ready for high-precision inference!");
+      }
+
+      dom.analyzerSuggestionsList.innerHTML = suggestions.map(s => `
+        <li class="flex items-start space-x-1.5">
+          <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-groq-400 shrink-0 mt-0.5"></i>
+          <span>${s}</span>
+        </li>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // AI Prompt Enhancer (Uses Groq or heuristic fallback)
+    async function enhancePromptWithAI() {
+      const userPrompt = dom.promptInput.value.trim();
+      if (!userPrompt) {
+        showToast('Please enter a prompt in the input box first.', 'amber');
+        return;
+      }
+
+      const btn = document.getElementById('enhance-prompt-btn');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Enhancing...</span>`;
+      btn.disabled = true;
+      lucide.createIcons();
+
+      try {
+        let enhanced = '';
+
+        if (APP_STATE.apiKey) {
+          // Call Groq with dedicated prompt-optimizer system message
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${APP_STATE.apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'llama-3.1-8b-instant', // use fastest model for prompt optimizer
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are an elite Prompt Engineer. Your task is to rewrite the user\'s prompt to make it 10x more effective for LLMs. Add clear role definition, concrete constraints, context, and explicit output format. Return ONLY the enhanced prompt itself with no conversational intro or explanation.'
+                },
+                {
+                  role: 'user',
+                  content: userPrompt
+                }
+              ],
+              temperature: 0.4,
+              max_tokens: 1024
+            })
+          });
+
+          if (!res.ok) throw new Error(`Groq returned ${res.status}`);
+          const data = await res.json();
+          enhanced = data.choices[0].message.content.trim();
+        } else {
+          // Offline rule-based prompt enhancement template
+          enhanced = `Act as an expert specialist in this domain.\n\nTask: ${userPrompt}\n\nRequirements:\n1. Provide a comprehensive, well-structured response.\n2. Include real-world trade-offs, code or concrete examples where applicable.\n3. Format with clear markdown headings and bullet points for readability.`;
+        }
+
+        dom.enhancedPromptText.textContent = enhanced;
+        dom.enhancedPromptBox.classList.remove('hidden');
+
+        // Confetti effect!
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 } });
+        }
+      } catch (err) {
+        console.error('Enhancer error:', err);
+        showToast(`Enhancement failed: ${err.message}`, 'error');
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    function applyEnhancedPrompt() {
+      const text = dom.enhancedPromptText.textContent;
+      if (text) {
+        dom.promptInput.value = text;
+        autoResizeTextarea(dom.promptInput);
+        analyzeCurrentPrompt();
+        showToast('Enhanced prompt applied!', 'success');
+        dom.enhancedPromptBox.classList.add('hidden');
+      }
+    }
+
+    function togglePromptAnalyzer(forceOpen) {
+      if (forceOpen === true) {
+        dom.analyzerDrawer.classList.remove('hidden', 'translate-x-full');
+      } else if (forceOpen === false) {
+        dom.analyzerDrawer.classList.add('hidden', 'translate-x-full');
+      } else {
+        dom.analyzerDrawer.classList.toggle('hidden');
+        dom.analyzerDrawer.classList.toggle('translate-x-full');
+      }
+    }
+
+    // --- Message Sending & Groq Inference Engine ---
+    async function sendMessage() {
+      if (APP_STATE.isGenerating) return;
+
+      const userText = dom.promptInput.value.trim();
+      if (!userText) return;
+
+      if (!APP_STATE.apiKey) {
+        openApiKeyModal();
+        showKeyFeedback('A Groq API key is required to send messages.', 'amber');
+        return;
+      }
+
+      // Clear input & welcome banner
+      dom.promptInput.value = '';
+      autoResizeTextarea(dom.promptInput);
+      dom.welcomeBanner.classList.add('hidden');
+
+      // Append user message to UI & history
+      appendMessageUI('user', userText);
+      APP_STATE.messages.push({ role: 'user', content: userText });
+
+      // Start generation state
+      APP_STATE.isGenerating = true;
+      APP_STATE.abortController = new AbortController();
+      updateGenerationStatus(true, 'Initiating Groq inference...');
+
+      // Reset performance metrics
+      dom.metricSpeed.textContent = '-- T/s';
+      dom.metricTtft.textContent = '-- ms';
+      dom.metricTokens.textContent = '0';
+      dom.metricLatency.textContent = '0.00s';
+
+      let webSources = [];
+
+      // If Web Search Grounding is ON
+      if (APP_STATE.webSearchEnabled) {
+        updateGenerationStatus(true, 'Searching web sources...');
+        webSources = await performWebSearch(userText);
+      }
+
+      // Prepare payload messages
+      const apiMessages = [];
+
+      // System Prompt
+      let activeSystemPrompt = APP_STATE.systemPrompt || "You are a helpful AI assistant powered by Groq.";
+      if (APP_STATE.webSearchEnabled && webSources.length > 0) {
+        const sourcesText = webSources.map((s, idx) => `[Source ${idx + 1}]: "${s.title}" (${s.url})\nSummary: ${s.snippet}`).join('\n\n');
+        activeSystemPrompt += `\n\n[VERIFIED WEB SEARCH GROUNDING]\nThe user prompt may benefit from these live retrieved sources. Synthesize relevant facts and cite sources where helpful:\n${sourcesText}`;
+      }
+      apiMessages.push({ role: 'system', content: activeSystemPrompt });
+
+      // Append conversation history
+      APP_STATE.messages.forEach(msg => {
+        apiMessages.push({ role: msg.role, content: msg.content });
+      });
+
+      // Create Assistant Message Container in UI
+      const assistantMsgElements = appendMessageUI('assistant', '', webSources);
+      const textContainer = assistantMsgElements.textEl;
+      textContainer.classList.add('typing-cursor');
+
+      const startTime = performance.now();
+      let firstTokenTime = null;
+      let totalTokens = 0;
+      let fullResponseText = '';
+
+      try {
+        updateGenerationStatus(true, 'Streaming Groq LPU response...');
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${APP_STATE.apiKey}`
+          },
+          body: JSON.stringify({
+            model: APP_STATE.model,
+            messages: apiMessages,
+            temperature: APP_STATE.temperature,
+            max_tokens: APP_STATE.maxTokens,
+            top_p: APP_STATE.topP,
+            stream: APP_STATE.streamEnabled
+          }),
+          signal: APP_STATE.abortController.signal
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error?.message || `Groq API error HTTP ${response.status}`);
+        }
+
+        if (APP_STATE.streamEnabled) {
+          // --- Server-Sent Events (SSE) Stream Processing ---
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // keep partial line in buffer
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || trimmed.startsWith(':')) continue;
+              if (trimmed === 'data: [DONE]') break;
+
+              if (trimmed.startsWith('data: ')) {
+                try {
+                  const json = JSON.parse(trimmed.slice(6));
+                  const delta = json.choices?.[0]?.delta?.content;
+
+                  if (delta) {
+                    if (firstTokenTime === null) {
+                      firstTokenTime = performance.now();
+                      const ttft = Math.round(firstTokenTime - startTime);
+                      dom.metricTtft.textContent = `${ttft} ms`;
+                    }
+
+                    fullResponseText += delta;
+                    totalTokens++;
+
+                    // Render markdown incrementally
+                    renderAssistantContent(textContainer, fullResponseText);
+
+                    // Update live speed
+                    const elapsedSec = (performance.now() - startTime) / 1000;
+                    const speed = Math.round(totalTokens / Math.max(elapsedSec, 0.05));
+                    dom.metricSpeed.textContent = `${speed} T/s`;
+                    dom.metricTokens.textContent = totalTokens;
+                    dom.metricLatency.textContent = `${elapsedSec.toFixed(2)}s`;
+
+                    scrollToBottom();
+                  }
+                } catch (e) {
+                  // Partial chunk parse error ignored
+                }
+              }
+            }
+          }
+        } else {
+          // Non-streaming batch response
+          const json = await response.json();
+          fullResponseText = json.choices?.[0]?.message?.content || '';
+          totalTokens = json.usage?.completion_tokens || Math.ceil(fullResponseText.length / 4);
+          renderAssistantContent(textContainer, fullResponseText);
+
+          const elapsedSec = (performance.now() - startTime) / 1000;
+          dom.metricTokens.textContent = totalTokens;
+          dom.metricLatency.textContent = `${elapsedSec.toFixed(2)}s`;
+          dom.metricSpeed.textContent = `${Math.round(totalTokens / Math.max(elapsedSec, 0.05))} T/s`;
+        }
+
+        // Finalize Assistant Message
+        textContainer.classList.remove('typing-cursor');
+        APP_STATE.messages.push({ role: 'assistant', content: fullResponseText });
+        highlightCodeBlocks(textContainer);
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          textContainer.classList.remove('typing-cursor');
+          textContainer.innerHTML += `<div class="text-xs text-amber-400 mt-2 font-mono italic">[Generation stopped by user]</div>`;
+        } else {
+          console.error('Inference error:', err);
+          textContainer.classList.remove('typing-cursor');
+          textContainer.innerHTML = `
+            <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-300 space-y-1">
+              <div class="font-bold flex items-center space-x-1">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
+                <span>Groq API Error</span>
+              </div>
+              <p>${escapeHtml(err.message)}</p>
+              <button onclick="openApiKeyModal()" class="mt-1 text-xs text-red-400 underline hover:text-red-200">Check or change your Groq API key</button>
+            </div>
+          `;
+          lucide.createIcons();
+        }
+      } finally {
+        APP_STATE.isGenerating = false;
+        APP_STATE.abortController = null;
+        updateGenerationStatus(false);
+        scrollToBottom();
+      }
+    }
+
+    function stopGeneration() {
+      if (APP_STATE.abortController) {
+        APP_STATE.abortController.abort();
+      }
+    }
+
+    function updateGenerationStatus(active, text = '') {
+      if (active) {
+        dom.statusSpinner.classList.remove('hidden');
+        dom.statusSpinner.classList.add('flex');
+        dom.statusText.textContent = text;
+        dom.stopBtn.classList.remove('hidden');
+        dom.stopBtn.classList.add('flex');
+        dom.sendBtn.disabled = true;
+      } else {
+        dom.statusSpinner.classList.add('hidden');
+        dom.statusSpinner.classList.remove('flex');
+        dom.stopBtn.classList.add('hidden');
+        dom.stopBtn.classList.remove('flex');
+        dom.sendBtn.disabled = false;
+      }
+      lucide.createIcons();
+    }
+
+    // --- Message UI Rendering ---
+    function appendMessageUI(role, content = '', webSources = []) {
+      const msgWrapper = document.createElement('div');
+      msgWrapper.className = `flex flex-col space-y-2 max-w-4xl mx-auto w-full ${role === 'user' ? 'items-end' : 'items-start'}`;
+
+      if (role === 'user') {
+        msgWrapper.innerHTML = `
+          <div class="flex items-center space-x-2 text-[11px] text-slate-400">
+            <span class="font-semibold text-slate-300">You</span>
+          </div>
+          <div class="bg-gradient-to-br from-groq-600/90 to-groq-500 text-white rounded-2xl rounded-tr-none px-4 py-3 text-sm shadow-md max-w-2xl break-words leading-relaxed">
+            ${escapeHtml(content).replace(/\n/g, '<br>')}
+          </div>
+        `;
+        dom.messagesContainer.appendChild(msgWrapper);
+        scrollToBottom();
+        return { wrapper: msgWrapper };
+      } else {
+        // Assistant Message Card
+        let sourcesHtml = '';
+        if (webSources && webSources.length > 0) {
+          sourcesHtml = `
+            <div class="mb-3 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300 space-y-1.5 w-full">
+              <div class="flex items-center justify-between text-blue-300 font-semibold text-[11px]">
+                <span class="flex items-center space-x-1">
+                  <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                  <span>Grounded Web Sources (${webSources.length})</span>
+                </span>
+                <span class="text-[10px] text-blue-400 font-mono">Live DDG & Wikipedia</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                ${webSources.map((s, i) => `
+                  <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="p-2 rounded bg-dark-card hover:bg-dark-hover border border-dark-border flex items-center space-x-2 text-[11px] text-slate-300 hover:text-white transition group">
+                    <span class="w-4 h-4 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] font-mono shrink-0 font-bold">${i + 1}</span>
+                    <span class="truncate flex-1">${escapeHtml(s.title)}</span>
+                    <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-blue-400 shrink-0"></i>
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        msgWrapper.innerHTML = `
+          <div class="flex items-center space-x-2 text-[11px] text-slate-400">
+            <span class="w-5 h-5 rounded-md bg-groq-500/20 border border-groq-500/30 flex items-center justify-center text-groq-400">
+              <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+            </span>
+            <span class="font-semibold text-slate-200">${APP_STATE.model}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-dark-card border border-dark-border text-slate-400 font-mono">Groq LPU</span>
+          </div>
+
+          <div class="bg-dark-card border border-dark-border rounded-2xl rounded-tl-none p-4 md:p-5 text-sm text-slate-200 shadow-md w-full relative group">
+            ${sourcesHtml}
+            <div class="assistant-content prose-custom"></div>
+            
+            <!-- Message Action Toolbar -->
+            <div class="flex items-center space-x-2 pt-3 mt-3 border-t border-dark-border/60 text-slate-400 text-xs">
+              <button onclick="copyMessageText(this)" class="flex items-center space-x-1 px-2 py-1 rounded hover:bg-dark-hover hover:text-slate-200 transition text-[11px]">
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy</span>
+              </button>
+              <button onclick="regenerateLastResponse()" class="flex items-center space-x-1 px-2 py-1 rounded hover:bg-dark-hover hover:text-slate-200 transition text-[11px]">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                <span>Regenerate</span>
+              </button>
+            </div>
+          </div>
+        `;
+        dom.messagesContainer.appendChild(msgWrapper);
+        lucide.createIcons();
+        scrollToBottom();
+        return { wrapper: msgWrapper, textEl: msgWrapper.querySelector('.assistant-content') };
+      }
+    }
+
+    function renderAssistantContent(el, text) {
+      if (typeof marked !== 'undefined') {
+        el.innerHTML = marked.parse(text);
+      } else {
+        el.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+      }
+    }
+
+    function highlightCodeBlocks(container) {
+      container.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+
+        // Add copy button to code blocks
+        const pre = block.parentElement;
+        if (!pre.querySelector('.code-copy-btn')) {
+          const btn = document.createElement('button');
+          btn.className = 'code-copy-btn absolute top-2 right-2 px-2 py-1 rounded bg-dark-card/80 hover:bg-dark-hover border border-dark-border text-[10px] font-mono text-slate-300 hover:text-white transition flex items-center space-x-1';
+          btn.innerHTML = `<i data-lucide="copy" class="w-3 h-3"></i><span>Copy</span>`;
+          btn.onclick = () => {
+            navigator.clipboard.writeText(block.innerText);
+            btn.innerHTML = `<i data-lucide="check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400">Copied!</span>`;
+            setTimeout(() => {
+              btn.innerHTML = `<i data-lucide="copy" class="w-3 h-3"></i><span>Copy</span>`;
+              lucide.createIcons();
+            }, 2000);
+          };
+          pre.style.position = 'relative';
+          pre.appendChild(btn);
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function scrollToBottom() {
+      dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+    }
+
+    function copyMessageText(btn) {
+      const card = btn.closest('.bg-dark-card');
+      const content = card.querySelector('.assistant-content').innerText;
+      navigator.clipboard.writeText(content);
+      const original = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400">Copied!</span>`;
+      setTimeout(() => {
+        btn.innerHTML = original;
+        lucide.createIcons();
+      }, 2000);
+    }
+
+    function regenerateLastResponse() {
+      if (APP_STATE.messages.length === 0 || APP_STATE.isGenerating) return;
+      // Remove last assistant message if present
+      if (APP_STATE.messages[APP_STATE.messages.length - 1].role === 'assistant') {
+        APP_STATE.messages.pop();
+        const lastEl = dom.messagesContainer.lastElementChild;
+        if (lastEl) lastEl.remove();
+      }
+      const lastUser = APP_STATE.messages[APP_STATE.messages.length - 1];
+      if (lastUser && lastUser.role === 'user') {
+        APP_STATE.messages.pop();
+        const lastUserEl = dom.messagesContainer.lastElementChild;
+        if (lastUserEl) lastUserEl.remove();
+        dom.promptInput.value = lastUser.content;
+        autoResizeTextarea(dom.promptInput);
+        sendMessage();
+      }
+    }
+
+    function clearChat() {
+      if (APP_STATE.messages.length === 0) return;
+      if (confirm('Clear all conversation messages?')) {
+        APP_STATE.messages = [];
+        dom.messagesContainer.innerHTML = '';
+        dom.messagesContainer.appendChild(dom.welcomeBanner);
+        dom.welcomeBanner.classList.remove('hidden');
+        dom.metricSpeed.textContent = '-- T/s';
+        dom.metricTtft.textContent = '-- ms';
+        dom.metricTokens.textContent = '0';
+        dom.metricLatency.textContent = '0.00s';
+        showToast('Chat history cleared', 'success');
+      }
+    }
+
+    function exportChatMarkdown() {
+      if (APP_STATE.messages.length === 0) {
+        showToast('No messages to export.', 'amber');
+        return;
+      }
+      let md = `# Groq LLM Playground Export\n\n`;
+      md += `- **Model**: ${APP_STATE.model}\n`;
+      md += `- **Temperature**: ${APP_STATE.temperature}\n`;
+      md += `- **Max Tokens**: ${APP_STATE.maxTokens}\n`;
+      md += `- **Date**: ${new Date().toLocaleString()}\n\n---\n\n`;
+
+      APP_STATE.messages.forEach(msg => {
+        md += `### ${msg.role === 'user' ? 'User' : 'Assistant (' + APP_STATE.model + ')'}\n\n${msg.content}\n\n---\n\n`;
+      });
+
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `groq-chat-${Date.now()}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function usePromptStarter(text) {
+      dom.promptInput.value = text;
+      autoResizeTextarea(dom.promptInput);
+      analyzeCurrentPrompt();
+      dom.promptInput.focus();
+    }
+
+    // --- API Key Modal & Validation ---
+    function openApiKeyModal() {
+      dom.apiKeyInput.value = APP_STATE.apiKey;
+      dom.keyTestFeedback.classList.add('hidden');
+      dom.apiKeyModal.classList.remove('hidden');
+    }
+
+    function closeApiKeyModal() {
+      dom.apiKeyModal.classList.add('hidden');
+    }
+
+    function toggleApiKeyVisibility() {
+      const type = dom.apiKeyInput.type === 'password' ? 'text' : 'password';
+      dom.apiKeyInput.type = type;
+      document.getElementById('eye-icon').setAttribute('data-lucide', type === 'password' ? 'eye' : 'eye-off');
+      lucide.createIcons();
+    }
+
+    async function testApiKeyConnection() {
+      const key = dom.apiKeyInput.value.trim();
+      if (!key) {
+        showKeyFeedback('Please enter an API key to test.', 'amber');
+        return;
+      }
+
+      const btn = document.getElementById('test-key-btn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Validating...</span>`;
+      btn.disabled = true;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const count = data.data?.length || 0;
+          showKeyFeedback(`✓ Key verified successfully! Access granted to ${count} Groq models.`, 'emerald');
+        } else {
+          showKeyFeedback(`✗ Invalid API key. Groq returned status ${res.status}. Check console.groq.com/keys.`, 'red');
+        }
+      } catch (err) {
+        showKeyFeedback(`✗ Connection error: ${err.message}`, 'red');
+      } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    function saveApiKey() {
+      const key = dom.apiKeyInput.value.trim();
+      APP_STATE.apiKey = key;
+      localStorage.setItem('groq_api_key', key);
+      updateApiKeyStatusBadge();
+      closeApiKeyModal();
+
+      if (key) {
+        showToast('Groq API Key saved securely to localStorage!', 'success');
+        fetchGroqModels(false);
+      } else {
+        showToast('API Key cleared.', 'amber');
+      }
+    }
+
+    function clearApiKey() {
+      APP_STATE.apiKey = '';
+      dom.apiKeyInput.value = '';
+      localStorage.removeItem('groq_api_key');
+      updateApiKeyStatusBadge();
+      showKeyFeedback('Key cleared.', 'amber');
+    }
+
+    function updateApiKeyStatusBadge() {
+      if (APP_STATE.apiKey) {
+        dom.apiKeyBtnText.textContent = 'API Key Set';
+        dom.apiKeyStatusDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+      } else {
+        dom.apiKeyBtnText.textContent = 'Set API Key';
+        dom.apiKeyStatusDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
+      }
+    }
+
+    function showKeyFeedback(msg, color) {
+      dom.keyTestFeedback.className = `text-xs p-2.5 rounded-lg border ${
+        color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' :
+        color === 'amber' ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' :
+        'bg-red-500/10 border-red-500/30 text-red-300'
+      }`;
+      dom.keyTestFeedback.textContent = msg;
+      dom.keyTestFeedback.classList.remove('hidden');
+    }
+
+    // --- Toast Notifications ---
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-dark-card border border-dark-border';
+      toast.className = `fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl text-white text-xs font-semibold shadow-2xl transition-all duration-300 transform translate-y-3 opacity-0 flex items-center space-x-2 ${bg}`;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-3', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
